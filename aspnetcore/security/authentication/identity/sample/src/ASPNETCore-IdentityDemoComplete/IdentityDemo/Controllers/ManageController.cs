@@ -158,20 +158,24 @@ namespace IdentityDemo.Controllers
                 return View(model);
             }
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
+            if (User != null)
             {
-                throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+                var user = await _userManager.GetUserAsync(User);
+                if (user == null)
+                {
+                    throw new ApplicationException($"Unable to load user with ID '{_userManager.GetUserId(User)}'.");
+                }
+
+                var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+                if (!changePasswordResult.Succeeded)
+                {
+                    AddErrors(changePasswordResult);
+                    return View(model);
+                }
+
+                await _signInManager.SignInAsync(user, isPersistent: false);
             }
 
-            var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
-            if (!changePasswordResult.Succeeded)
-            {
-                AddErrors(changePasswordResult);
-                return View(model);
-            }
-
-            await _signInManager.SignInAsync(user, isPersistent: false);
             _logger.LogInformation("User changed their password successfully.");
             StatusMessage = "Your password has been changed.";
 
